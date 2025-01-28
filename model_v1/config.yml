@@ -1,0 +1,51 @@
+# config.yml
+version: "3.1"
+
+language: en
+
+pipeline:
+  # 1) Basic Tokenization
+- name: WhitespaceTokenizer
+
+  # 2) Simple Regex Features (optional, helps detect patterns like emails, numbers, etc.)
+- name: RegexFeaturizer
+
+  # 3) Extract Lexical/Syntactic Features (word prefixes, suffixes, etc.)
+- name: LexicalSyntacticFeaturizer
+
+  # 4) Convert text into counts (bag-of-words)
+- name: CountVectorsFeaturizer
+
+  # 5) Main Model for Intent Classification & Entity Extraction
+- name: DIETClassifier
+  epochs: 50
+  constrain_similarities: true
+  model_confidence: softmax
+  entity_recognition: true
+  intent_classification: true
+
+  # 6) Map synonyms (like NYC -> New York)
+- name: EntitySynonymMapper
+
+  # 7) Fallback logic for NLU
+  #    If model confidence is below threshold, it triggers fallback
+- name: FallbackClassifier
+  threshold: 0.4
+  ambiguity_threshold: 0.1
+
+policies:
+  # 1) RulePolicy handles single-turn rules (greeting, goodbye, fallback, forms, etc.)
+- name: RulePolicy
+  core_fallback_threshold: 0.4
+  core_fallback_action_name: "utter_fallback"
+  enable_fallback_prediction: true
+
+  # 2) MemoizationPolicy memorizes seen stories exactly
+- name: MemoizationPolicy
+
+  # 3) TEDPolicy for multi-step conversation patterns
+- name: TEDPolicy
+  max_history: 5
+  epochs: 50
+  constrain_similarities: true
+assistant_id: 20250126-121840-recent-blue

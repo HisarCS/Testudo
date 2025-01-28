@@ -1,0 +1,83 @@
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - hello there
+    - good morning
+    - good evening
+    - hey there
+
+- intent: goodbye
+  examples: |
+    - bye
+    - goodbye
+    - see you later
+    - take care
+
+- intent: get_weather
+  examples: |
+    - what's the weather like
+    - what's the weather
+    - is it going to rain
+    - weather in Istanbul
+    - tell me the weather in [London](location)
+
+- intent: get_time
+  examples: |
+    - what time is it
+    - current time please
+    - can you tell me the time
+
+- intent: get_date
+  examples: |
+    - what is today's date
+    - what's the date
+    - which day is it today
+
+- intent: ask_question
+  examples: |
+    - who invented the telephone
+    - what is the capital of France
+    - hey turtle when was Google founded?
+    - When was the company Google founded? 
+    - When was google founded 
+
+- intent: ask_about_turtle
+  examples: |
+    - what are you
+    - tell me about yourself
+    - how do you work
+    - what is your purpose
+
+- intent: servo_control
+  examples: |
+    - move forward
+    - rotate left servo
+    - turn right servo
+    - move your head
+
+- intent: provide_user_info
+  examples: |
+    - my name is [Alice](name)
+    - I am [Mike](name)
+    - I have autism
+    - I'm 10 years old
+    - I have adhd
+
+- intent: user_feeling_sad
+  examples: |
+    - I am sad
+    - I'm upset
+    - feeling depressed
+    - I'm feeling down
+
+- intent: fallback
+  examples: |
+    - blah blah
+    - asdf jkl
+    - ???
+
