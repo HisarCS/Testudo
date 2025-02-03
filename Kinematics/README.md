@@ -1,123 +1,119 @@
 # Quadruped Kinematics Guide
 
-## Overview
-This guide explains the kinematics behind the quadruped movement system. It covers:
-- Forward and inverse kinematics
-- Step trajectory generation
-- Movement strategy
-- Gait patterns and stability considerations
-- Implementation details and real-world optimizations
+## Introduction
+This guide provides an overview of the kinematic model used in a quadruped robot simulation. The model includes:
+- **Inverse kinematics (IK) for leg control**
+- **Forward movement generation**
+- **Gait phasing and trajectory planning**
+
+The model assumes a **2-link robotic leg structure** with **hip and knee joints**, along with a **trot gait** for movement.
 
 ---
 
-## 1. Quadruped Leg Kinematics
-Each leg of the quadruped has **two degrees of freedom (DOF)**:
-- **Hip Joint (θ1):** Controls the forward and backward motion.
-- **Knee Joint (θ2):** Controls the height and extension of the foot.
+## Leg Structure and Coordinate System
+Each leg consists of:
+- **L1 (Upper leg length):** 6 cm
+- **L2 (Lower leg length):** 4 cm
 
-### **Forward Kinematics**
-To compute the foot position `(x, y)` given joint angles `(θ1, θ2)`, use:
+Legs are attached at **four corners of the robot’s body**:
+- **Front Left (FL)**
+- **Front Right (FR)**
+- **Rear Left (RL)**
+- **Rear Right (RR)**
 
-\[ x = L_1 \cos(\theta_1) + L_2 \cos(\theta_1 + \theta_2) \]
-\[ y = L_1 \sin(\theta_1) + L_2 \sin(\theta_1 + \theta_2) \]
-
-Where:
-- \( L_1 \) = Upper leg length (0.06m)
-- \( L_2 \) = Lower leg length (0.04m)
-
-These equations allow calculating **where the foot is** relative to the quadruped body.
-
-### **Inverse Kinematics**
-To determine joint angles `(θ1, θ2)` for a given foot position `(x, y)`, solve:
-
-\[ D = \frac{x^2 + y^2 - L_1^2 - L_2^2}{2 L_1 L_2} \]
-\[ \theta_2 = \cos^{-1}(D) \]
-\[ \theta_1 = \tan^{-1}(\frac{y}{x}) - \tan^{-1}(\frac{L_2 \sin(\theta_2)}{L_1 + L_2 \cos(\theta_2)}) \]
-
-If \(|D| > 1\), the target position is **out of reach**, and adjustments need to be made.
+The robot's **center of mass (COM)** is at the body center.
 
 ---
 
-## 2. Step Trajectory Generation
-The quadruped follows a predefined trajectory for each step:
-- **Step Length:** 0.1m (horizontal movement per step)
-- **Step Height:** 0.02m (vertical lift per step)
+## Inverse Kinematics (IK)
+The inverse kinematics solver calculates the required joint angles (**hip & knee**) to reach a specific foot position in the **leg’s local coordinate frame**.
 
-A sinusoidal trajectory is used for smooth stepping:
+### Equations:
+#### **1. Compute Distance from Hip to Foot**
+\[
+R = \sqrt{x^2 + z^2}
+\]
 
-\[ y = h \sin(\pi \frac{x + step\_length/2}{step\_length}) \]
+#### **2. Compute Knee Angle**
+\[
+\theta_2 = \cos^{-1}\left( \frac{R^2 - L1^2 - L2^2}{2 \cdot L1 \cdot L2} \right)
+\]
 
-Where:
-- \( h \) = step height
-- \( x \) = position along the step length
+#### **3. Compute Hip Angle**
+\[
+\theta_1 = \tan^{-1}\left( \frac{z}{x} \right) - \tan^{-1}\left( \frac{L2 \sin(\theta_2)}{L1 + L2 \cos(\theta_2)} \right)
+\]
 
-This ensures that the foot follows a **natural curve** rather than a sharp linear movement, reducing instability.
-
----
-
-## 3. Quadruped Movement Strategy
-To move forward a total distance \( d \):
-1. Compute the number of steps:  
-   \[ num\_steps = \frac{d}{step\_length} \]
-2. Generate the step trajectory for each leg.
-3. Execute movements in a synchronized manner for **stability**.
-
-### **Gait Planning**
-A common gait strategy is **trotting** (diagonal legs move together):
-- Step **FL + RR** → Step **FR + RL** → Repeat
-
-Other gait options include:
-- **Crawling gait:** One leg moves at a time, providing maximum stability.
-- **Bounding gait:** Front and rear legs move together in pairs for speed.
-
-The choice of gait affects **stability, speed, and energy efficiency**.
+These angles are used to drive the **servo motors** for precise foot placement.
 
 ---
 
-## 4. Stability Considerations
-Quadruped robots require **proper balance and control** to ensure smooth movement. Key factors include:
-- **Center of Mass (CoM):** Must remain within the support polygon for static stability.
-- **Zero Moment Point (ZMP):** Used in dynamic walking to predict foot placements.
-- **Force Distribution:** Ensuring legs apply even pressure on the ground.
-- **Sensor Feedback:** Using IMUs and force sensors to adjust foot positions.
+## Step Trajectory Generation
+The quadruped follows a **trot gait**, meaning **diagonal pairs of legs move together**. The trajectory follows a **smooth, sinusoidal path**:
+
+### **Step Height & Length**
+- **Step Length:** 10 cm
+- **Step Height:** 2 cm
+
+Foot motion follows a **half-sine wave** for a **smooth step transition**:
+\[
+y = h \sin \left( \pi \frac{x + L/2}{L} \right)
+\]
+where:
+- \(h\) = Step height
+- \(L\) = Step length
 
 ---
 
-## 5. Real-World Implementation
-### **Motor Control**
-For real-world execution, each joint is controlled by **servo motors**, which need:
-- **Precise PWM control** for smooth transitions.
-- **Torque calculations** to prevent excessive strain.
-- **PID controllers** to maintain accuracy.
+## Gait Planning
+The quadruped uses **gait phasing** to ensure stable walking. Each leg moves with a phase offset:
 
-### **Environmental Adaptation**
-Quadrupeds may need to adapt to different terrains:
-- **Flat surfaces:** Standard gait works efficiently.
-- **Uneven terrain:** Requires **sensor feedback** for dynamic adjustments.
-- **Slopes:** Adjusts step height and angle for proper footing.
+### **Trot Gait Phasing**
+| Leg  | Phase Offset |
+|------|-------------|
+| FL   | 0.00        |
+| RR   | 0.00        |
+| FR   | 0.50        |
+| RL   | 0.50        |
 
----
-
-## 6. Example Implementation
-```python
-quadruped = QuadrupedMovementSolver()
-total_distance = 0.2  # Move forward 0.2 meters
-movement_plan = quadruped.move_forward(total_distance)
-```
-This function generates step sequences for **all four legs**, ensuring a stable gait.
+This means **FL and RR legs move together**, while **FR and RL legs move together**.
 
 ---
 
-## 7. Optimizing Quadruped Motion
-- **Adjust step length:** Shorter steps improve control, longer steps increase speed.
-- **Fine-tune step height:** Lower heights save energy, but higher steps avoid obstacles.
-- **Add terrain sensing:** Using LiDAR or IMUs for real-time adaptation.
-- **Energy-efficient gaits:** Minimize unnecessary joint movements.
+## Stability Check
+To maintain balance, the quadruped performs a **stability check**:
+1. **Projects foot positions onto the ground plane**
+2. **Computes the center of mass (COM) projection**
+3. **Ensures the COM projection remains inside the stance foot polygon**
+
+This ensures that the quadruped does not tip over while walking.
 
 ---
 
-## Conclusion
-This guide provides the foundation for quadruped motion planning. Adjustments to **step length, step height, gait strategy, and terrain adaptation** can optimize performance for different environments.
+## Moving Forward
+The quadruped advances by executing **alternating swing and stance phases**:
+1. **Phase A:** FL & RR swing forward, FR & RL remain grounded
+2. **Phase B:** FR & RL swing forward, FL & RR remain grounded
 
-For real-world implementation, consider integrating **IMU feedback, PID motor control, and terrain-aware walking strategies** for advanced capabilities.
+Each full cycle **advances the robot by one step length**.
 
+### **Full Motion Execution**
+To move forward by `distance D`:
+\[
+N_{steps} = \frac{D}{L_{step}}
+\]
+where:
+- \(D\) = Target distance
+- \(L_{step}\) = Step length
+
+Each step consists of **10 discretized motion points** for smooth movement.
+
+---
+
+## Summary
+- **Inverse kinematics** calculates joint angles for each step.
+- **Step trajectory** ensures smooth foot placement.
+- **Gait phasing** keeps the robot stable.
+- **Full motion planning** moves the quadruped forward efficiently.
+
+By implementing this model, we achieve a functional **quadruped walking algorithm**!
