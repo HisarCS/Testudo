@@ -1,0 +1,130 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - get_weather
+  - get_time
+  - get_date
+  - ask_question
+  - ask_about_turtle
+  - servo_control
+  - provide_user_info
+  - user_feeling_sad
+  - fallback
+
+entities:
+  - location
+  - name
+  - emotion
+
+slots:
+  name:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: user_info_form
+            requested_slot: name
+
+  # If you want `location` from an entity (e.g., [Istanbul](location)):
+  location:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: location
+
+  # We remove free-text mapping for `disability_type` to avoid the "hey" -> `disability_type` problem.
+  # Also remove it from forms if you’re not truly collecting it.
+  disability_type:
+    type: text
+    influence_conversation: false
+    mappings: []
+
+  # If a user expresses sadness, we set emotion to "sad"
+  emotion:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_intent
+        intent: user_feeling_sad
+        value: "sad"
+
+  # The following are set ONLY by custom actions (via SlotSet).
+  weather_info:
+    type: text
+    influence_conversation: false
+    mappings: []
+
+  time_info:
+    type: text
+    influence_conversation: false
+    mappings: []
+
+  date_info:
+    type: text
+    influence_conversation: false
+    mappings: []
+
+  answer:
+    type: text
+    influence_conversation: false
+    mappings: []
+
+forms:
+  user_info_form:
+    required_slots:
+      - name  # We collect only 'name' in the form
+
+responses:
+  utter_greet:
+    - text: "Hello! How can I assist you today?"
+
+  utter_goodbye:
+    - text: "Goodbye! Have a great day!"
+
+  utter_fallback:
+    - text: "I'm sorry, I didn't quite understand that."
+
+  utter_weather_result:
+    - text: "The weather in {location} is {weather_info}."
+
+  utter_time_result:
+    - text: "The current time is {time_info}."
+
+  utter_date_result:
+    - text: "Today's date is {date_info}."
+
+  utter_question_answer:
+    - text: "{answer}"
+
+  utter_turtle_info:
+    - text: "I am the Turtle bot, here to help with companionship, servo control, and more!"
+
+  utter_servo_confirmation:
+    - text: "Servo moved as requested."
+
+  utter_acknowledge_info:
+    - text: "Thanks, I've noted your name is {name}."
+
+  utter_emotional_support:
+    - text: "I'm here for you. It's okay to feel sad sometimes. Would you like to talk more about it?"
+
+  utter_ask_name:
+    - text: "What is your name?"
+
+actions:
+  - action_greet_user
+  - action_get_weather
+  - action_get_time
+  - action_get_date
+  - action_ask_question
+  - action_provide_emotional_support
+  - action_servo_control
+  - action_turtle_info
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true
