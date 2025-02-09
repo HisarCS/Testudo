@@ -1,4 +1,4 @@
 # Testudo-Turtle
-The turtle project of the Idealab FabLab
+The Testudo project of the Idealab FabLab
  
 
