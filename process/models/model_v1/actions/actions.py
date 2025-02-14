@@ -1,4 +1,5 @@
-from typing import Any, Text, Dict, List, Optional
+# actions.py
+from typing import Any, Text, Dict, List
 import wikipedia
 import datetime
 
@@ -13,7 +14,6 @@ from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 
-# 1) Greet user
 class ActionGreetUser(Action):
     def name(self) -> Text:
         return "action_greet_user"
@@ -36,8 +36,6 @@ class ActionGreetUser(Action):
 
         return []
 
-
-# 2) Get Weather
 class ActionGetWeather(Action):
     def name(self) -> Text:
         return "action_get_weather"
@@ -57,11 +55,8 @@ class ActionGetWeather(Action):
         # Dummy example:
         weather_info = "cloudy, around 20°C"
 
-        # We set a slot or simply pass it via utterance:
         return [SlotSet("location", location), SlotSet("weather_info", weather_info)]
 
-
-# 3) Get Time
 class ActionGetTime(Action):
     def name(self) -> Text:
         return "action_get_time"
@@ -76,8 +71,6 @@ class ActionGetTime(Action):
         now = datetime.datetime.now().strftime("%H:%M")
         return [SlotSet("time_info", now)]
 
-
-# 4) Get Date
 class ActionGetDate(Action):
     def name(self) -> Text:
         return "action_get_date"
@@ -92,60 +85,72 @@ class ActionGetDate(Action):
         today = datetime.datetime.now().strftime("%d %B %Y")
         return [SlotSet("date_info", today)]
 
+# ------------------------------------------------------------------------------
+# AskQuestion action that uses DuckDuckGo + Selenium
+# ------------------------------------------------------------------------------
 class ActionAskQuestion(Action):
-    def name(self):
+    def name(self) -> Text:
         return "action_ask_question"
 
-    def run(self, dispatcher, tracker, domain):
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
         user_question = (tracker.latest_message.get("text") or "").strip()
         print(f"🛠 Received question: {user_question}")
 
-        # Call the search function and get the result
         answer = self.duckduckgo_search_selenium(user_question)
-
-        # Send the result to the user
         dispatcher.utter_message(text=answer)
         return []
 
-    def duckduckgo_search_selenium(query):
-    """ Searches DuckDuckGo and extracts the answer from a <p> element using Selenium on Raspberry Pi. """
+    def duckduckgo_search_selenium(self, query: str) -> str:
+        """
+        Searches DuckDuckGo and extracts an answer from a <p> element using Selenium.
+        Designed for use on a Raspberry Pi with Chromium + chromedriver.
+        """
+        options = Options()
+        # Point to your Pi's Chromium browser location:
+        options.binary_location = "/usr/bin/chromium-browser"
+        options.add_argument("--headless")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-blink-features=AutomationControlled")
 
-    options = Options()
-    options.binary_location = "/usr/bin/chromium-browser"
-    options.add_argument("--headless")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-blink-features=AutomationControlled")
+        service = Service("/usr/bin/chromedriver")
+        driver = webdriver.Chrome(service=service, options=options)
 
-    service = Service("/usr/bin/chromedriver")
-    driver = webdriver.Chrome(service=service, options=options)
+        # Load DuckDuckGo with the query
+        driver.get(f"https://duckduckgo.com/?q={query}")
 
-    # Load DuckDuckGo with the query.
-    driver.get(f"https://duckduckgo.com/?q={query}")
+        answer = "Sorry, I couldn't find an answer."
 
-    answer = "Sorry, I couldn't find an answer."
-
-    try:
-        # Wait for a <p> element that might contain the answer
-        p_element = WebDriverWait(driver, 8).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div.VrBPSncUavA1d7C9kAc5.FQ2XxQQbwcMwCtbtebpY p"))
-        )
-        answer = p_element.text.strip()
-    except Exception as e:
         try:
+            # Try a known CSS selector for a search-answer snippet
             p_element = WebDriverWait(driver, 8).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div.aSBdOftk9efiVV8GwLLE"))
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "div.VrBPSncUavA1d7C9kAc5.FQ2XxQQbwcMwCtbtebpY p")
+                )
             )
             answer = p_element.text.strip()
-        except Exception as e:
-            pass
+        except Exception:
+            # Try a fallback CSS selector
+            try:
+                p_element = WebDriverWait(driver, 8).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "div.aSBdOftk9efiVV8GwLLE"))
+                )
+                answer = p_element.text.strip()
+            except Exception:
+                pass
 
-    driver.quit()
-    return answer
+        driver.quit()
+        return answer
 
-
-# 6) Provide Emotional Support
+# ------------------------------------------------------------------------------
+# Provide Emotional Support
+# ------------------------------------------------------------------------------
 class ActionProvideEmotionalSupport(Action):
     def name(self) -> Text:
         return "action_provide_emotional_support"
@@ -156,14 +161,17 @@ class ActionProvideEmotionalSupport(Action):
         tracker: Tracker,
         domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
-        message = ("I am here for you. It's okay to feel sad sometimes. "
-                    "Would you like to talk more about it?")
+        message = (
+            "I am here for you. It's okay to feel sad sometimes. "
+            "Would you like to talk more about it?"
+        )
         
         dispatcher.utter_message(text=message)
         return []
 
-
-# 7) Servo Control
+# ------------------------------------------------------------------------------
+# Servo Control
+# ------------------------------------------------------------------------------
 class ActionServoControl(Action):
     def name(self) -> Text:
         return "action_servo_control"
@@ -174,37 +182,32 @@ class ActionServoControl(Action):
         tracker: Tracker,
         domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
-
-        # You might parse the exact direction or servo instruction from the text
+        # You can parse direction from user_message if needed
         user_message = tracker.latest_message.get("text").lower()
-
+        
         from adafruit_servokit import ServoKit
-
-        # Create a ServoKit instance for a 16-channel servo driver
         kit = ServoKit(channels=16)
 
-        def set_servo_angle(channel, angle):
+        # Helper function to safely set a servo angle
+        def set_servo_angle(kit_instance, channel, angle):
+            """Set the servo channel to a safe angle [0..180]."""
             if angle < 0:
                 angle = 0
             elif angle > 180:
                 angle = 180
-    
-            kit.servo[channel].angle = angle
-            print("Servo Moved!")
-        
-        set_servo_angle(kit, channel=0, angle=90)
-        set_servo_angle(kit, channel=1, angle=90)
-        set_servo_angle(kit, channel=2, angle=90)
-        set_servo_angle(kit, channel=3, angle=90)
-        set_servo_angle(kit, channel=4, angle=90)
-        set_servo_angle(kit, channel=5, angle=90)
-        set_servo_angle(kit, channel=6, angle=90)
-        set_servo_angle(kit, channel=7, angle=90)
-        
+            kit_instance.servo[channel].angle = angle
+            print("[Servo] Moved channel", channel, "to", angle)
+
+        # Example: set 8 channels to 90 degrees
+        for channel_idx in range(8):
+            set_servo_angle(kit, channel_idx, 90)
+
+        dispatcher.utter_message(text="Servos have been set to 90 degrees.")
         return []
 
-
-# 8) Turtle Info
+# ------------------------------------------------------------------------------
+# Turtle Info
+# ------------------------------------------------------------------------------
 class ActionTurtleInfo(Action):
     def name(self) -> Text:
         return "action_turtle_info"
@@ -216,8 +219,10 @@ class ActionTurtleInfo(Action):
         domain: Dict[Text, Any]
     ) -> List[Dict[Text, Any]]:
 
-        # Provide details about the Turtle bot
-        info = ("I am Testudo, an AI-integrated, quadruped companion.. I'm equipped with a Raspberry Pi 4, "
-                "servo motors, and can perform web lookups, store user data, and more!")
+        info = (
+            "I am Testudo, an AI-integrated, quadruped companion. "
+            "I'm equipped with a Raspberry Pi 4, servo motors, and can "
+            "perform web lookups, store user data, and more!"
+        )
         dispatcher.utter_message(text=info)
         return []
