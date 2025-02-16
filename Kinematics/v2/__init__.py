@@ -44,7 +44,7 @@ from utils import (
     project_to_plane
 )
 
-from main import (
+from process.main import (
     QuadrupedRobot,
     main
 )

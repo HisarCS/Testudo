@@ -2,10 +2,13 @@
 import os
 os.environ["ALSA_NO_WARN"] = "1"
 
-import speech_recognition as sr
 import time
+import threading
+import json
+import pyaudio
+from vosk import Model, KaldiRecognizer
 
-_stop_listening = None  # function pointer returned by listen_in_background
+_stop_listening = None  # We'll store a function to stop background listening
 _IGNORE_UNTIL = 0.0
 
 def set_ignore_until(t: float):
@@ -16,99 +19,172 @@ def set_ignore_until(t: float):
     global _IGNORE_UNTIL
     _IGNORE_UNTIL = t
 
-def _keyword_callback(recognizer, audio, keyword, event_queue):
+
+def init_background_listener(keyword, event_queue, mic_index=1, model_path="/path/to/vosk-model"):
     """
-    This callback runs whenever speech_recognition picks up audio in the background.
-    We only process if current time >= _IGNORE_UNTIL.
-    """
-    global _IGNORE_UNTIL
-
-    current_time = time.time()
-    if current_time < _IGNORE_UNTIL:
-        # We are in a "cooldown" period, so ignore
-        return
-
-    try:
-        transcript = recognizer.recognize_google(audio)
-        transcript_lower = transcript.lower()
-        print(f"[Keyword Listener] Heard: {transcript_lower}")
-
-        if keyword.lower() in transcript_lower:
-            # Put True on the event_queue to signal the main loop
-            event_queue.put(True)
-
-    except sr.UnknownValueError:
-        pass  # ignore
-    except sr.RequestError as e:
-        print(f"[Keyword Listener] API error: {e}")
-
-def init_background_listener(keyword, event_queue, mic_index=2):
-    """
-    Initialize and start the background listener thread.
-    Returns the stop_listening function so you can stop the background thread later.
+    Initialize a background thread for keyword detection using Vosk.
+    Whenever the keyword is detected, we put True into event_queue.
+    Returns a stop_listening() function that terminates the background thread.
     """
     global _stop_listening
 
-    # Print microphone list for debugging
-    for i, name in enumerate(sr.Microphone.list_microphone_names()):
-        print(i, name)
+    # Load Vosk model once here
+    print("[Keyword Listener] Loading Vosk model for keyword detection...")
+    model = Model(model_path)
+    recognizer = KaldiRecognizer(model, 16000)
+    print("[Keyword Listener] Model loaded.")
 
-    recognizer = sr.Recognizer()
-
-    # A static threshold helps avoid over-adjusting for silent environments
-    # Let the recognizer dynamically adjust energy threshold
-    recognizer.dynamic_energy_threshold = True
-    recognizer.dynamic_energy_adjustment_damping = 0.15
-    recognizer.pause_threshold = 1.3
-    recognizer.phrase_threshold = 0.2
-    recognizer.non_speaking_duration = 0.4
-
-    mic = sr.Microphone(device_index=mic_index, sample_rate=16000, chunk_size=1024)
-    with mic as source:
-        recognizer.adjust_for_ambient_noise(source, duration=1)
-
-    # Start background listening
-    _stop_listening = recognizer.listen_in_background(
-        mic,
-        lambda r, a: _keyword_callback(r, a, keyword, event_queue)
+    # Initialize PyAudio for capturing microphone input
+    audio = pyaudio.PyAudio()
+    stream = audio.open(
+        format=pyaudio.paInt16,
+        channels=1,
+        rate=16000,
+        input=True,
+        input_device_index=mic_index,
+        frames_per_buffer=8000
     )
+    stream.start_stream()
 
-    # Return the stop_listening function to the caller
+    running = True
+
+    def run_background():
+        global _IGNORE_UNTIL
+        while running:
+            data = stream.read(4000, exception_on_overflow=False)
+            if len(data) == 0:
+                continue
+
+            current_time = time.time()
+            if current_time < _IGNORE_UNTIL:
+                continue
+
+            if recognizer.AcceptWaveform(data):
+                # Final result
+                res_json = recognizer.Result()
+                res_dict = json.loads(res_json)
+                text = res_dict.get("text", "").strip().lower()
+                if text == "huh":
+                    text = ""
+
+                if text:
+                    print(f"[Keyword Listener] Final recognized: {text}")
+                    # Only check final recognized text for "turtle"
+                    if keyword.lower() in text:
+                        event_queue.put(True)
+            else:
+                # partial result => ignore for keyword detection
+                pass
+
+        # Clean up resources
+        print("[Keyword Listener] Background thread stopping...")
+        stream.stop_stream()
+        stream.close()
+        audio.terminate()
+        print("[Keyword Listener] Closed PyAudio stream.")
+
+    thread = threading.Thread(target=run_background, daemon=True)
+    thread.start()
+
+    def stop_listening():
+        nonlocal running
+        running = False
+        # Wait for the thread to finish
+        thread.join()
+
+    _stop_listening = stop_listening
     return _stop_listening
 
-def continuous_recognition(mic_index=2, timeout=3.5, max_speak_duration=16):
+
+def continuous_recognition(
+        mic_index=1,
+        timeout=2.0,
+        max_speak_duration=16,
+        model_path="/home/pi/Testudo/vosk-model-small-en-us-0.15"):
     """
-    A single-pass blocking recognition for the user's query.
-    Uses a separate mic stream from the background listener (which must be stopped).
+    Blocks and listens for a single user utterance using Vosk-based STT.
+    - `timeout`: How many seconds to wait for the user to start speaking
+    - `max_speak_duration`: Max time (in seconds) to capture speech
+    - `model_path`: Path to your Vosk STT model
+    Returns the recognized text (str) or None if nothing recognized.
     """
-    recognizer = sr.Recognizer()
+    print("[Speech] Loading Vosk model for continuous recognition...")
+    model = Model(model_path)
+    recognizer = KaldiRecognizer(model, 16000)
+    print("[Speech] Model loaded.")
 
-    # Let the recognizer dynamically adjust energy threshold
-    recognizer.dynamic_energy_threshold = True
-    recognizer.dynamic_energy_adjustment_damping = 0.15
-    recognizer.pause_threshold = 1.3
-    recognizer.phrase_threshold = 0.2
-    recognizer.non_speaking_duration = 0.4
+    audio = pyaudio.PyAudio()
+    stream = audio.open(
+        format=pyaudio.paInt16,
+        channels=1,
+        rate=16000,
+        input=True,
+        input_device_index=mic_index,
+        frames_per_buffer=8000
+    )
+    stream.start_stream()
 
-    with sr.Microphone(device_index=mic_index) as source:
-        # Adjust for ambient noise inside a 'with' block
-        recognizer.adjust_for_ambient_noise(source, duration=1)
-        print("[Speech] Listening for your response (silence detection + fallback)...")
+    print("[Speech] Listening for your response...")
 
-        try:
-            audio = recognizer.listen(
-                source,
-                timeout=timeout,            # wait up to 'timeout' sec to start hearing
-                phrase_time_limit=max_speak_duration
-            )
-            print("[Speech] Processing your speech...")
-            return recognizer.recognize_google(audio)
+    start_time = time.time()
+    speech_start_time = None
+    recognized_text = []
 
-        except sr.WaitTimeoutError:
+    silence_timeout = 2.0
+    last_speech_time = None
+
+    while True:
+        # If user hasn't started speaking after `timeout` sec, give up
+        if speech_start_time is None and (time.time() - start_time) > timeout:
             print("[Speech] No speech detected within timeout.")
-        except sr.UnknownValueError:
-            print("[Speech] Could not understand you.")
-        except sr.RequestError as e:
-            print(f"[Speech] Recognition service error: {e}")
+            break
 
-    return None
+        # If user started speaking and we've exceeded max_speak_duration, stop
+        if speech_start_time is not None and (time.time() - speech_start_time) > max_speak_duration:
+            print("[Speech] Max speaking duration exceeded.")
+            break
+
+        data = stream.read(4000, exception_on_overflow=False)
+        if len(data) == 0:
+            continue
+
+        if recognizer.AcceptWaveform(data):
+            # Final result
+            result_json = recognizer.Result()
+            result_dict = json.loads(result_json)
+            text = result_dict.get("text", "").strip()
+            if text == "huh":
+                    text = ""
+            if text:
+                recognized_text.append(text)
+                last_speech_time = time.time()
+                if speech_start_time is None:
+                    # The moment we get some final text, user has started speaking
+                    speech_start_time = time.time()
+        else:
+            # Partial result
+            partial_json = recognizer.PartialResult()
+            partial_dict = json.loads(partial_json)
+            partial_text = partial_dict.get("partial", "").strip()
+            if partial_text:
+                last_speech_time = time.time()
+                if speech_start_time is None:
+                    speech_start_time = time.time()
+
+        # If we've started speech and haven't heard anything for `silence_timeout`, end
+        if speech_start_time is not None and last_speech_time is not None:
+            if (time.time() - last_speech_time) > silence_timeout:
+                print("[Speech] Silence detected, ending recognition.")
+                break
+
+    # Cleanup
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
+
+    final_text = " ".join(recognized_text).strip()
+    if final_text:
+        print("[Speech] Final recognized text:", final_text)
+        return final_text
+    else:
+        return None

@@ -49,7 +49,7 @@ def text_to_speech(text, retries=1, device_index=2):
 
                 sound = AudioSegment.from_mp3(output_mp3)
                 sound = sound.set_frame_rate(16000)
-                sound = sound + 30  # +10 dB
+                sound = sound + 25  # +10 dB
                 sound.export(output_wav, format="wav")
 
                 _play_audio_with_pyaudio(output_wav, device_index=device_index)
