@@ -1,0 +1,803 @@
+version: "3.1"
+
+nlu:
+  # -----------------------------------
+  # 1) Greetings
+  # -----------------------------------
+  - intent: greet
+    examples: |
+      - hey
+      - hello
+      - hi
+      - hello there
+      - good morning
+      - good evening
+      - hey there
+      - what's up
+      - what is up
+      - hi testudo
+      - testudo hello
+      - aloha
+      - it's nice to see you
+      - it is nice to see you
+      - I'm glad to talk to you
+      - I am glad to talk to you
+
+  # -----------------------------------
+  # 2) Goodbyes
+  # -----------------------------------
+  - intent: goodbye
+    examples: |
+      - bye
+      - goodbye
+      - see you later
+      - take care
+      - farewell
+      - I'm out
+      - I am out
+      - gotta go
+      - I have to go
+      - catch you later
+      - talk soon
+
+  # -----------------------------------
+  # 3) Weather
+  # -----------------------------------
+  - intent: get_weather
+    examples: |
+      - what's the weather like
+      - what is the weather like
+      - what's the weather
+      - what is the weather
+      - is it going to rain
+      - weather in [Istanbul](location)
+      - tell me the weather in [London](location)
+      - will it snow soon
+      - how is the temperature outside
+      - what is the weather forecast for tomorrow
+      - what's the weather forecast for tomorrow
+      - do I need an umbrella
+      - will I need an umbrella
+
+  # -----------------------------------
+  # 4) Time
+  # -----------------------------------
+  - intent: get_time
+    examples: |
+      - what time is it
+      - what's the time
+      - current time please
+      - can you tell me the time
+      - do you know the time
+      - time check
+      - I need to know the time
+
+  # -----------------------------------
+  # 5) Date
+  # -----------------------------------
+  - intent: get_date
+    examples: |
+      - what is today's date
+      - what's today's date
+      - what is the date
+      - what's the date
+      - which day is it today
+      - what day is it
+      - date check
+
+  # -----------------------------------
+  # 6) General knowledge questions
+  # -----------------------------------
+  - intent: ask_question
+    examples: |
+      - what is a duck
+      - what's a duck
+      - what are ducks
+      - who invented the telephone
+      - what is the capital of France
+      - what's the capital of France
+      - who is the president of the United States
+      - who's the president of the United States
+      - who won the FIFA World Cup in 2018
+      - who wrote "Romeo and Juliet"
+      - what is the chemical formula for water
+      - what's the chemical formula for water
+      - who discovered gravity
+      - what is the highest mountain in the world
+      - what's the highest mountain in the world
+
+  # -----------------------------------
+  # 7) Ask about Turtle
+  # -----------------------------------
+  - intent: ask_about_turtle
+    examples: |
+      - what are you
+      - tell me about yourself
+      - how do you work
+      - what is your purpose
+      - what's your purpose
+      - who created you
+      - can you explain your features
+      - why are you called Testudo
+
+  # -----------------------------------
+  # 8) Servo control
+  # -----------------------------------
+  - intent: servo_control
+    examples: |
+      - move forward
+      - rotate left servo
+      - turn right servo
+      - move your head
+      - walk around
+      - move your front legs
+      - can you adjust your legs
+
+  # -----------------------------------
+  # 9) Provide user info
+  # -----------------------------------
+  - intent: provide_user_info
+    examples: |
+      - my name is [Alice](name)
+      - I'm [Mike](name)
+      - I am [Mike](name)
+      - I have autism
+      - I have ADHD
+      - I'm 10 years old
+      - I am 10 years old
+      - I'm from [Canada](origin)
+      - I am from [Canada](origin)
+      - I live in [Berlin](location)
+      - I am living in [Berlin](location)
+      - I'm a teacher
+      - I am a teacher
+      - my favorite color is red
+      - my favourite color is red
+      - I'm in a relationship
+      - I am in a relationship
+      - I love playing basketball
+      - I enjoy playing basketball
+      - my favorite music genre is rock
+      - my favourite music genre is rock
+      - my favorite printer is bambulab
+
+  # -----------------------------------
+  # 10) User feeling sad
+  # -----------------------------------
+  - intent: user_feeling_sad
+    examples: |
+      - I am sad
+      - I'm sad
+      - I'm upset
+      - I am upset
+      - feeling depressed
+      - I am feeling down
+      - I'm feeling down
+      - I feel miserable
+      - I'm not doing so well
+      - I am not doing so well
+
+  # -----------------------------------
+  # 11) User feeling happy
+  # -----------------------------------
+  - intent: user_feeling_happy
+    examples: |
+      - I'm so happy
+      - I am so happy
+      - I am feeling great
+      - I'm feeling great
+      - I'm in a great mood
+      - I am in a great mood
+      - I feel amazing
+      - I'm excited
+      - I am excited
+      - everything is awesome today
+
+  # -----------------------------------
+  # 12) Express thanks
+  # -----------------------------------
+  - intent: express_thanks
+    examples: |
+      - thank you
+      - thanks
+      - thanks a lot
+      - I appreciate it
+      - I'm grateful
+      - I am grateful
+      - cheers
+      - that was helpful
+
+  # -----------------------------------
+  # 13) Random chitchat
+  # -----------------------------------
+  - intent: random_chitchat
+    examples: |
+      - how are you?
+      - how's it going?
+      - what’s up
+      - what's up
+      - do you like pizza?
+      - any fun plans?
+      - do you have friends?
+      - what's your favorite color?
+      - what's your favourite color?
+      - what is your favorite color?
+      - what is your favourite color?
+      - you are pretty cool
+      - you're pretty cool
+      - do you like music?
+      - do you dream?
+      - can you sing?
+      - I like soup
+      - I'm not a fan of food
+      - I am not a fan of food
+      - I prefer soup over salad
+      - I like soup more than salad
+
+  # -----------------------------------
+  # NEW) ask_about_kit
+  # -----------------------------------
+  - intent: ask_about_kit
+    examples: |
+      - what is testudo kit
+      - how do I build the testudo kit
+      - what do I get in the kit
+      - is it hard to assemble
+      - how many parts are included
+      - what's in the box
+      - what components are there
+      - how to use the kit
+      - can you explain the kit
+
+  # -----------------------------------
+  # NEW) ask_about_electronics
+  # -----------------------------------
+  - intent: ask_about_electronics
+    examples: |
+      - how many servos do you have
+      - how many servos does it have
+      - what battery do you use
+      - what kind of battery do you use
+      - how do you power yourself
+      - how do you get power
+      - how do you stay powered
+      - can you explain your electronics
+      - explain your electronics to me
+      - what's a PWM servo driver
+      - what is a PWM servo driver
+      - how many channels do you use
+      - how many channels are there
+      - do you have a microphone
+      - does it have a microphone
+      - do you have a camera
+      - does it have a camera
+      - what's the voltage for the servos
+      - what is the voltage for the servos
+      - how does the regulator work
+      - how does the voltage regulator work
+      - how is the raspberry pi powered
+      - how do you power the raspberry pi
+
+  # -----------------------------------
+  # NEW) ask_about_3dprinting
+  # -----------------------------------
+  - intent: ask_about_3dprinting
+    examples: |
+      - how long does it take to 3D print testudo
+      - what's the 3D printing time for testudo
+      - what is the 3D printing time for testudo
+      - which filament do you use
+      - what type of filament do you use
+      - do you use PLA or ABS
+      - is PLA or ABS better for this
+      - how many grams of filament is needed
+      - how much filament do I need
+      - do I need supports
+      - are supports required
+      - what infill density do you recommend
+      - what is the recommended infill density
+      - what's the best 3D printer for this
+      - what is the best 3D printer for this
+      - can I modify the 3D design
+      - is it okay to modify the 3D design
+      - do I need a big printer
+      - do I need a large 3D printer
+
+  # -----------------------------------
+  # NEW) ask_about_raspberry_pi
+  # -----------------------------------
+  - intent: ask_about_raspberry_pi
+    examples: |
+      - which raspberry pi do you have
+      - which raspberry pi is used
+      - how do I set up raspberry pi 4
+      - how do I configure raspberry pi 4
+      - do you run on raspberry pi 3 or 4
+      - are you using raspberry pi 3 or 4
+      - do you use python on the pi
+      - is python used on the raspberry pi
+      - can you run windows on the pi
+      - can windows run on the raspberry pi
+      - what's the OS on the pi
+      - what is the operating system on the raspberry pi
+      - how do you handle audio on the pi
+      - how does raspberry pi process audio
+
+  # -----------------------------------
+  # NEW) ask_about_ai
+  # -----------------------------------
+  - intent: ask_about_ai
+    examples: |
+      - how does your AI work
+      - how does your artificial intelligence work
+      - do you use machine learning
+      - do you implement machine learning
+      - which classifier do you use
+      - which type of classifier do you use
+      - is your model custom trained
+      - is your AI model trained from scratch
+      - how do you adapt your behavior
+      - how do you modify your behavior
+      - do you use neural networks
+      - is your AI based on neural networks
+      - are you cloud-based
+      - does your AI run in the cloud
+      - how do you do speech recognition
+      - how does your AI process speech
+
+  # -----------------------------------
+  # NEW) user_shares_personal_details
+  # -----------------------------------
+  - intent: user_shares_personal_details
+    examples: |
+      - I'm [John](name) and I teach robotics
+      - I am [John](name) and I teach robotics
+      - I'm [Sarah](name), I'm a sophomore
+      - I am [Sarah](name), I am a sophomore
+      - I'm a 16-year-old student
+      - I am a 16-year-old student
+      - my city is [Los Angeles](location)
+      - I live in [Los Angeles](location)
+      - my hobby is painting
+      - I like painting as a hobby
+      - I love to play the piano
+      - I enjoy playing the piano
+      - my major is computer science
+      - I study computer science
+
+  # -----------------------------------
+  # NEW) user_wants_joke
+  # -----------------------------------
+  - intent: user_wants_joke
+    examples: |
+      - tell me a joke
+      - can you tell me a joke
+      - do you know any jokes
+      - do you know a joke
+      - make me laugh
+      - can you make me laugh
+      - say something funny
+      - tell me something funny
+      - joke please
+      - can you tell a funny joke
+      - I'm bored, amuse me
+      - I am bored, amuse me
+
+
+  # -----------------------------------
+  # 11) Fallback
+  # -----------------------------------
+  - intent: fallback
+    examples: |
+      - blah blah
+      - asdf jkl
+      - ???
+      - nonsense
+      - random input
+      - qwerty
+
+  - intent: ask_about_data
+    examples: |
+      - what data do you have about me?
+      - show me my data
+      - what information have you collected on me?
+      - can you tell me what user info you stored?
+      - what do you know about me?
+      - which data did you collect from me?
+      - what do you know about me?
+      - what about me do you know
+  
+  - intent: apology
+    examples: |
+      - I'm sorry
+      - i am sorry
+      - apologies
+      - sorry about that
+      - my apologies
+      - excuse me
+      - pardon me
+      - I apologize
+      - sorry, my bad
+      - forgive me
+      - I'm really sorry
+      - I am really sorry
+
+  - intent: compliment
+    examples: |
+      - you're awesome
+      - you are awesome
+      - great job
+      - you're amazing
+      - you are amazing
+      - that's impressive
+      - I like your style
+      - you're so smart
+      - you did well
+      - I'm impressed
+      - I am impressed
+      - you're the best
+      - you are the best
+      - that was fantastic
+
+  - intent: smalltalk_how_are_you
+    examples: |
+      - how are you?
+      - how's it going?
+      - how is it going?
+      - how are you doing today?
+      - what's up?
+      - how do you feel?
+      - how are things?
+      - how's life treating you?
+      - how has life been treating you?
+      - how have you been?
+      - how's everything?
+      - how is everything?
+      - how's your day been?
+      - how has your day been?
+
+  - intent: smalltalk_im_fine
+    examples: |
+      - I'm fine, thank you
+      - I am fine, thank you
+      - doing well, thanks
+      - I'm okay
+      - I am okay
+      - pretty good, thanks
+      - I'm doing great
+      - I am doing great
+      - I'm alright
+      - I am alright
+      - feeling good
+      - I'm doing well
+      - I am doing well
+      - I'm in a good mood
+      - I am in a good mood
+      - all good here
+
+  - intent: smalltalk_weather_comment
+    examples: |
+      - what a beautiful day!
+      - it's really sunny today
+      - it is really sunny today
+      - it's a bit chilly outside
+      - it is a bit chilly outside
+      - looks like it's going to rain
+      - the weather is amazing
+      - it's very cloudy today
+      - it is very cloudy today
+      - I love this weather
+      - it's pretty warm outside
+      - the day is so gloomy
+      - it's a perfect day for a walk
+      - it is a perfect day for a walk
+
+  - intent: smalltalk_morning_greeting
+    examples: |
+      - good morning
+      - morning!
+      - top of the morning to you
+      - hello, good morning
+      - bright and early, good morning
+      - morning, hope you slept well
+      - rise and shine!
+      - good morning, how are you?
+      - a very good morning to you
+      - hey, good morning!
+
+  - intent: smalltalk_afternoon_greeting
+    examples: |
+      - good afternoon
+      - hello, good afternoon
+      - afternoon!
+      - hi, hope you're having a nice afternoon
+      - pleasant afternoon
+      - hope your afternoon is going well
+      - good afternoon, how's your day?
+      - enjoying the afternoon?
+      - what a lovely afternoon!
+      - hi, good afternoon to you
+
+  - intent: smalltalk_evening_greeting
+    examples: |
+      - good evening
+      - evening!
+      - hello, good evening
+      - have a nice evening
+      - pleasant evening to you
+      - hope you had a good day, good evening
+      - good evening, how was your day?
+      - hello, enjoying your evening?
+      - wishing you a lovely evening
+      - hi, good evening!
+
+  - intent: smalltalk_day_comment
+    examples: |
+      - it's a great day today
+      - it is a great day today
+      - what a wonderful day
+      - today is amazing
+      - I'm enjoying this day
+      - the day is going well
+      - it's a bright day
+      - such a lovely day
+      - it's a productive day
+      - today is pretty good
+      - I'm having a good day
+      - i am having a good day
+
+  - intent: smalltalk_night_comment
+    examples: |
+      - it's a quiet night
+      - it is a quiet night
+      - what a peaceful night
+      - the night is calm
+      - I love the night time
+      - it's a starry night
+      - the night is beautiful
+      - such a serene night
+      - tonight is relaxing
+      - it's a cool night
+      - it is a cool night
+      - I enjoy nights like these
+
+  - intent: smalltalk_feelings_happy
+    examples: |
+      - I'm feeling happy today
+      - i am feeling happy today
+      - I feel great
+      - I'm in a good mood
+      - i am in a good mood
+      - happiness is all around
+      - I'm really cheerful
+      - i am really cheerful
+      - I'm delighted
+      - i am delighted
+      - I'm so happy
+      - i am happy
+      - feeling joyful
+      - I'm smiling a lot today
+      - i am smiling a lot today
+      - I'm over the moon
+      - i am over the moon
+
+  - intent: smalltalk_feelings_sad
+    examples: |
+      - I'm feeling down
+      - i am feeling down
+      - I'm sad today
+      - i am sad today
+      - I'm a bit blue
+      - I'm not feeling great
+      - i am not feeling great
+      - feeling a little low
+      - I'm depressed
+      - i am depressed
+      - I'm upset
+      - i am upset
+      - I feel miserable
+      - today is a gloomy day
+      - I'm feeling low
+      - i am feeling low
+
+  - intent: smalltalk_feelings_excited
+    examples: |
+      - I'm so excited!
+      - i am so excited!
+      - feeling thrilled today
+      - I'm pumped up
+      - I can't wait for what's coming
+      - I'm really looking forward to it
+      - I'm full of excitement
+      - I am full of excitement
+      - I'm super excited
+      - I am super excited
+      - I feel exhilarated
+      - I'm buzzing with excitement
+      - this is so exciting!
+
+  - intent: smalltalk_feelings_bored
+    examples: |
+      - I'm bored
+      - I am bored
+      - I feel uninterested
+      - it's so dull today
+      - it is so dull today
+      - I'm not excited about anything
+      - boredom is hitting me hard
+      - I'm feeling very bored
+      - i am feeling very bored
+      - there's nothing to do
+      - I feel sluggish
+      - I'm in a rut
+      - today is boring
+
+  - intent: smalltalk_food_talk
+    examples: |
+      - I love food
+      - what's your favorite dish?
+      - I'm craving pizza
+      - I just had a great meal
+      - food is life
+      - do you like cooking?
+      - I'm hungry
+      - I enjoy trying new recipes
+      - what's for dinner?
+      - I could use a snack
+
+  - intent: smalltalk_music_talk
+    examples: |
+      - I love music
+      - what's your favorite song?
+      - I'm into rock music
+      - do you like jazz?
+      - I enjoy listening to classical tunes
+      - music lifts my mood
+      - I can't stop listening to this track
+      - have you heard the latest album?
+      - music is my passion
+      - I like discovering new bands
+
+  - intent: smalltalk_movie_talk
+    examples: |
+      - I love movies
+      - what's your favorite film?
+      - have you seen any good movies lately?
+      - I'm a big fan of action films
+      - I enjoy comedies
+      - movies are my escape
+      - I watched a great movie last night
+      - what's your go-to movie genre?
+      - I could watch films all day
+      - cinema is fascinating
+
+  - intent: smalltalk_book_talk
+    examples: |
+      - I enjoy reading books
+      - what's your favorite book?
+      - I'm into novels
+      - I love literature
+      - have you read any good books lately?
+      - I'm a big fan of mystery novels
+      - books open up new worlds
+      - I like science fiction
+      - reading is my hobby
+      - I spend a lot of time with books
+
+  - intent: smalltalk_sports_talk
+    examples: |
+      - I enjoy sports
+      - what's your favorite sport?
+      - I'm a big fan of football
+      - do you play any sports?
+      - sports keep me active
+      - I love watching basketball
+      - I'm into tennis
+      - sports are fun
+      - I follow many teams
+      - I like to stay fit with sports
+
+  - intent: smalltalk_hobby_talk
+    examples: |
+      - I have a hobby of painting
+      - what's your hobby?
+      - I enjoy gardening
+      - I like to cook in my free time
+      - my hobby is photography
+      - I love knitting
+      - I'm really into DIY projects
+      - I enjoy crafting
+      - hobbies make life interesting
+      - I spend time on my hobbies
+
+  - intent: smalltalk_travel_talk
+    examples: |
+      - I love to travel
+      - what's your favorite destination?
+      - I enjoy exploring new places
+      - traveling broadens the mind
+      - I recently visited a great city
+      - travel is my passion
+      - I like planning trips
+      - I dream of traveling the world
+      - exploring new cultures is exciting
+      - I always look forward to my next trip
+
+  - intent: smalltalk_work_talk
+    examples: |
+      - I work from home
+      - how's your work going?
+      - I'm busy with work
+      - my job is interesting
+      - I enjoy my career
+      - work keeps me busy
+      - I'm working on a new project
+      - I have a challenging job
+      - work is going well
+      - I'm productive at work
+
+  - intent: smalltalk_family_talk
+    examples: |
+      - I love my family
+      - how is your family?
+      - I spent time with my parents today
+      - my siblings are awesome
+      - family means everything to me
+      - I'm close to my family
+      - I enjoy family gatherings
+      - family is my support system
+      - I have a big family
+      - I cherish my family moments
+
+  - intent: smalltalk_friend_talk
+    examples: |
+      - my friends are great
+      - I had fun with my friends today
+      - how are your friends?
+      - I enjoy hanging out with friends
+      - friends make life better
+      - I love spending time with my buddies
+      - my friends and I are inseparable
+      - I cherish my friendships
+      - friends are my second family
+      - I always have fun with my friends
+
+  - intent: smalltalk_laugh
+    examples: |
+      - ha ha
+      - that made me laugh
+      - I'm laughing out loud
+      - that's hilarious
+      - LOL!
+      - chuckle chuckle
+      - that's funny
+      - I can't stop laughing
+      - you crack me up
+      - that was so amusing
+
+  - intent: smalltalk_story_sharing
+    examples: |
+      - let me tell you a story
+      - I have a funny story
+      - listen to my story
+      - I want to share a tale with you
+      - here's something interesting that happened
+      - I've got a story for you
+      - I have got a story for you
+      - let me narrate an experience
+      - I've got a story to share
+      - listen to this anecdote
+      - I want to tell you about something
+
+  - intent: smalltalk_opinion_sharing
+    examples: |
+      - in my opinion, life is beautiful
+      - I think that's interesting
+      - here's what I believe
+      - I feel that way too
+      - my take on it is positive
+      - I believe in being optimistic
+      - that sounds right to me
+      - I agree with that
+      - that's how I see it
+      - I have my own opinion on that
