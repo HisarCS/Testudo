@@ -1,0 +1,302 @@
+version: "3.1"
+rules:
+  - rule: greet rule
+    steps:
+      - intent: greet
+      - action: action_extract_user_info
+      - action: action_greet_user
+
+  - rule: goodbye rule
+    steps:
+      - intent: goodbye
+      - action: action_extract_user_info
+      - action: utter_goodbye
+
+  - rule: fallback rule
+    steps:
+      - intent: fallback
+      - action: action_extract_user_info
+      - action: utter_fallback
+
+  - rule: weather rule
+    steps:
+      - intent: get_weather
+      - action: action_extract_user_info
+      - action: action_get_weather
+
+  - rule: time rule
+    steps:
+      - intent: get_time
+      - action: action_extract_user_info
+      - action: action_get_time
+
+  - rule: date rule
+    steps:
+      - intent: get_date
+      - action: action_extract_user_info
+      - action: action_get_date
+
+  - rule: question rule
+    steps:
+      - intent: ask_question
+      - action: action_extract_user_info
+      - action: action_ask_question
+
+  - rule: user info rule
+    steps:
+      - intent: provide_user_info
+      - action: action_extract_user_info
+
+  - rule: user feeling sad rule
+    steps:
+      - intent: user_feeling_sad
+      - action: action_extract_user_info
+      - action: action_provide_emotional_support
+
+  - rule: user feeling angry rule
+    steps:
+      - intent: user_feeling_angry
+      - action: action_extract_user_info
+      - action: utter_calming_message
+
+  - rule: user feeling happy rule
+    steps:
+      - intent: user_feeling_happy
+      - action: action_extract_user_info
+      - action: utter_happy_response
+
+  - rule: express thanks
+    steps:
+      - intent: express_thanks
+      - action: action_extract_user_info
+      - action: utter_you_are_welcome
+
+  - rule: random chitchat rule
+    steps:
+      - intent: random_chitchat
+      - action: action_extract_user_info
+      - action: utter_random_chitchat
+
+  - rule: ask about kit
+    steps:
+      - intent: ask_about_kit
+      - action: action_extract_user_info
+      - action: utter_explain_kit
+
+  - rule: ask about electronics
+    steps:
+      - intent: ask_about_electronics
+      - action: action_extract_user_info
+      - action: utter_explain_electronics
+
+  - rule: ask about 3dprinting
+    steps:
+      - intent: ask_about_3dprinting
+      - action: action_extract_user_info
+      - action: utter_explain_3dprinting
+
+  - rule: ask about raspberry pi
+    steps:
+      - intent: ask_about_raspberry_pi
+      - action: action_extract_user_info
+      - action: utter_explain_raspberry_pi
+
+  - rule: ask about ai
+    steps:
+      - intent: ask_about_ai
+      - action: action_extract_user_info
+      - action: utter_explain_ai
+
+  - rule: servo control rule
+    steps:
+      - intent: servo_control
+      - action: action_extract_user_info
+      - action: action_servo_control
+      - action: utter_servo_confirmation
+
+  - rule: turtle info rule
+    steps:
+      - intent: ask_about_turtle
+      - action: action_extract_user_info
+      - action: action_turtle_info
+      - action: utter_turtle_info
+
+  - rule: user wants joke
+    steps:
+      - intent: user_wants_joke
+      - action: action_extract_user_info
+      - action: utter_joke
+
+  - rule: user_shares_personal_details rule
+    steps:
+      - intent: user_shares_personal_details
+      - action: action_extract_user_info
+      - action: utter_acknowledge_info
+      
+  - rule: ask about data rule
+    steps:
+      - intent: ask_about_data
+      - action: action_extract_user_info
+      - action: utter_ask_about_data
+  - rule: apology rule
+    steps:
+      - intent: apology
+      - action: action_extract_user_info
+      - action: utter_apology
+
+  - rule: compliment rule
+    steps:
+      - intent: compliment
+      - action: action_extract_user_info
+      - action: utter_compliment
+
+  - rule: how are you rule
+    steps:
+      - intent: smalltalk_how_are_you
+      - action: action_extract_user_info
+      - action: utter_how_are_you
+
+  - rule: im fine rule
+    steps:
+      - intent: smalltalk_im_fine
+      - action: action_extract_user_info
+      - action: utter_im_fine
+
+  - rule: weather comment rule
+    steps:
+      - intent: smalltalk_weather_comment
+      - action: action_extract_user_info
+      - action: utter_weather_comment
+
+  - rule: morning greeting rule
+    steps:
+      - intent: smalltalk_morning_greeting
+      - action: action_extract_user_info
+      - action: utter_morning_greeting
+
+  - rule: afternoon greeting rule
+    steps:
+      - intent: smalltalk_afternoon_greeting
+      - action: action_extract_user_info
+      - action: utter_afternoon_greeting
+
+  - rule: evening greeting rule
+    steps:
+      - intent: smalltalk_evening_greeting
+      - action: action_extract_user_info
+      - action: utter_evening_greeting
+
+  - rule: day comment rule
+    steps:
+      - intent: smalltalk_day_comment
+      - action: action_extract_user_info
+      - action: utter_day_comment
+
+  - rule: night comment rule
+    steps:
+      - intent: smalltalk_night_comment
+      - action: action_extract_user_info
+      - action: utter_night_comment
+
+  - rule: feelings happy rule
+    steps:
+      - intent: smalltalk_feelings_happy
+      - action: action_extract_user_info
+      - action: utter_feelings_happy
+
+  - rule: feelings sad rule
+    steps:
+      - intent: smalltalk_feelings_sad
+      - action: action_extract_user_info
+      - action: utter_feelings_sad
+
+  - rule: feelings excited rule
+    steps:
+      - intent: smalltalk_feelings_excited
+      - action: action_extract_user_info
+      - action: utter_feelings_excited
+
+  - rule: feelings bored rule
+    steps:
+      - intent: smalltalk_feelings_bored
+      - action: action_extract_user_info
+      - action: utter_feelings_bored
+
+  - rule: food talk rule
+    steps:
+      - intent: smalltalk_food_talk
+      - action: action_extract_user_info
+      - action: utter_food_talk
+
+  - rule: music talk rule
+    steps:
+      - intent: smalltalk_music_talk
+      - action: action_extract_user_info
+      - action: utter_music_talk
+
+  - rule: movie talk rule
+    steps:
+      - intent: smalltalk_movie_talk
+      - action: action_extract_user_info
+      - action: utter_movie_talk
+
+  - rule: book talk rule
+    steps:
+      - intent: smalltalk_book_talk
+      - action: action_extract_user_info
+      - action: utter_book_talk
+
+  - rule: sports talk rule
+    steps:
+      - intent: smalltalk_sports_talk
+      - action: action_extract_user_info
+      - action: utter_sports_talk
+
+  - rule: hobby talk rule
+    steps:
+      - intent: smalltalk_hobby_talk
+      - action: action_extract_user_info
+      - action: utter_hobby_talk
+
+  - rule: travel talk rule
+    steps:
+      - intent: smalltalk_travel_talk
+      - action: action_extract_user_info
+      - action: utter_travel_talk
+
+  - rule: work talk rule
+    steps:
+      - intent: smalltalk_work_talk
+      - action: action_extract_user_info
+      - action: utter_work_talk
+
+  - rule: family talk rule
+    steps:
+      - intent: smalltalk_family_talk
+      - action: action_extract_user_info
+      - action: utter_family_talk
+
+  - rule: friend talk rule
+    steps:
+      - intent: smalltalk_friend_talk
+      - action: action_extract_user_info
+      - action: utter_friend_talk
+
+  - rule: laugh rule
+    steps:
+      - intent: smalltalk_laugh
+      - action: action_extract_user_info
+      - action: utter_laugh
+
+  - rule: story sharing rule
+    steps:
+      - intent: smalltalk_story_sharing
+      - action: action_extract_user_info
+      - action: utter_story_sharing
+
+  - rule: opinion sharing rule
+    steps:
+      - intent: smalltalk_opinion_sharing
+      - action: action_extract_user_info
+      - action: utter_opinion_sharing
+
