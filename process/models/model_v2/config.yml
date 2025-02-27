@@ -1,0 +1,48 @@
+# config.yml
+version: "3.1"
+
+language: en
+
+pipeline:
+  # 1) Basic Tokenization
+- name: WhitespaceTokenizer
+
+  # 2) Convert text into counts (bag-of-words)
+- name: CountVectorsFeaturizer
+
+  # 3) Main Model for Intent Classification & Entity Extraction
+- name: DIETClassifier
+  epochs: 60
+  constrain_similarities: true
+  model_confidence: softmax
+  entity_recognition: true
+  intent_classification: true
+  batch_strategy: auto
+  embedding_dimension: 25
+
+  # 4) Map synonyms (like NYC -> New York)
+- name: EntitySynonymMapper
+
+  # 5) Fallback logic for NLU
+  #    If model confidence is below threshold, it triggers fallback
+- name: FallbackClassifier
+  threshold: 0.20
+  ambiguity_threshold: 0.05
+
+policies:
+  # 1) RulePolicy handles single-turn rules (greeting, goodbye, fallback, forms, etc.)
+- name: RulePolicy
+  core_fallback_threshold: 0.35
+  core_fallback_action_name: "utter_fallback"
+  enable_fallback_prediction: true
+
+  # 2) MemoizationPolicy memorizes seen stories exactly
+- name: MemoizationPolicy
+  max_history: 10
+
+  # 3) TEDPolicy for multi-step conversation patterns
+- name: TEDPolicy
+  max_history: 3
+  epochs: 35
+  constrain_similarities: true
+assistant_id: 20250126-121840-recent-blue
