@@ -12,99 +12,56 @@ from utils.file_utils import cleanup_audio_files
 
 keyword_detected_queue = queue.Queue()
 
-def start_rasa_servers():
+def call_lm_studio(
+    prompt: str,
+    host: str = "192.168.56.1",    # or the IP of your Windows machine
+    port: int = 1234,             # LM Studio port
+    model: str = "wizard-vicuna-13b-uncensored",
+    max_tokens: int = 256,
+    temperature: float = 0.7,
+    top_p: float = 0.9,
+    n: int = 1,
+    stream: bool = False
+) -> str:
     """
-    Start both the Rasa main server (port 5005) and the action server (port 5055)
-    as background subprocesses, same as your old code with Google STT did.
+    Send 'prompt' to LM Studio's /v1/completions endpoint, parse the JSON
+    it returns, and extract the text from the first choice.
     """
-    print("[Main] Starting Rasa servers in background...")
-
-    # Main Rasa server on port 5005
-    rasa_process = subprocess.Popen(
-        [
-            "rasa", "run",
-            "--enable-api",
-            "--cors", "*",
-            "--port", "5005",
-            "--model", "models/model_v2/models",
-            "--endpoints", "models/model_v2/endpoints.yml",
-            "--debug"
-        ],
-        text=True
-    )
-
-    # Action server on port 5055
-    action_process = subprocess.Popen(
-        [
-            "rasa", "run",
-            "actions",
-            "--actions", "models.model_v2.actions.actions",
-            "--debug"
-        ],
-        text=True
-    )
-
-    return rasa_process, action_process
-
-def wait_for_rasa_server(url="http://localhost:5005/"):
-    """
-    Wait until the main Rasa server returns HTTP 200 at `url`.
-    """
-    print(f"[Startup] Waiting for Rasa server at {url} to be ready...")
-    while True:
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                print(f"[Startup] Rasa main server at {url} is up and running.")
-                break
-        except requests.exceptions.RequestException:
-            pass
-        time.sleep(1)
-
-def wait_for_action_server_any(url="http://localhost:5055/", max_retries=60):
-    """
-    Wait until we get ANY HTTP response code from the action server on `url`.
-    Then sleep an extra few seconds to let it finish fully loading.
-    """
-    print(f"[Startup] Waiting for action server at {url} to respond with *any* code...")
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(url, timeout=3)
-            status = response.status_code
-            # If we get *any* status code, that means it's listening on the port.
-            print(f"[Startup] Action server responded with status {status}.")
-            print("[Startup] Sleeping extra 200 seconds to ensure it finishes loading...")
-            time.sleep(3)  # Give it extra time after the first response
-            return
-        except requests.exceptions.RequestException:
-            pass
-        time.sleep(1)
-
-    print(f"[Startup] Action server not responding after {max_retries} attempts.")
-
-def process_text(input_text: str) -> str:
-    """
-    Sends the user's text to the locally running Rasa server
-    via REST and returns the bot's response as a single string.
-    """
-    rasa_url = "http://localhost:5005/webhooks/rest/webhook"
+    url = f"http://{host}:{port}/v1/completions"
     payload = {
-        "sender": "test_user",
-        "message": input_text
+        "model": model,
+        "prompt": prompt,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "top_p": top_p,
+        "n": n,
+        "stream": stream,
     }
+
     try:
-        response = requests.post(rasa_url, json=payload, timeout=15)
-        if response.status_code == 200:
-            messages = response.json()  # List of bot messages
-            if messages:
-                replies = [msg.get("text", "") for msg in messages if msg.get("text")]
-                return " ".join(replies).strip()
-            else:
-                return "I didn't receive any response from Rasa."
-        else:
-            return f"Error from Rasa: {response.status_code} - {response.text}"
+        response = requests.post(url, json=payload, timeout=120)
+        response.raise_for_status()
+        
+        # We parse the JSON and get the text from choices[0]["text"].
+        response_data = response.json()
+        choices = response_data.get("choices", [])
+        if not choices:
+            return "[No completion returned]"
+
+        # Extract text from the first choice
+        text = choices[0].get("text", "")
+
+        # Strip leading/trailing whitespace/newlines:
+        text = text.strip()
+
+        return text
+
     except requests.exceptions.RequestException as e:
-        return f"Request to Rasa failed: {e}"
+        print(f"[LM Studio] Error: {e}")
+        return "[Error retrieving LM Studio response]"
+
+def process_text(user_input):
+    return call_lm_studio(user_input)
 
 def conversation_flow():
     """
@@ -133,7 +90,7 @@ def conversation_flow():
         print("[Conversation] No speech within 5s => fallback to keyword detection.")
         return
 
-    # We do have user input => Rasa + TTS
+    # We do have user input => AI + TTS
     response = process_text(user_input)
     text_to_speech(response)
 
@@ -169,9 +126,6 @@ def main():
     # 2) Wait for the ACTION server on port 5055 (accept any response, then sleep 200s)
     wait_for_action_server_any("http://localhost:5055/")
     
-    response = process_text("When was world war two?")
-    text_to_speech(response)
-
     # 3) Only now do we init the Vosk keyword detection
     print("[Main] Both Rasa servers are up (plus extra wait). Initializing background keyword listener...")
     stop_listening_fn = init_background_listener(
