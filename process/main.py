@@ -2,19 +2,30 @@ import subprocess
 import time
 import requests
 import queue
+
+import os
+from gtts import gTTS
+from pydub import AudioSegment
+import pyaudio
+import wave
+import threading
+
+# Local imports
 from helpers.speech_helper import (
     init_background_listener,
     continuous_recognition,
     set_ignore_until
 )
 from helpers.text_to_speech_helper import text_to_speech
+from helpers.audio_device_helper import get_input_device_index, get_output_device_index
 from utils.file_utils import cleanup_audio_files
 from helpers.user_data_extraction import extract_all_info
 from helpers.user_data_manager import load_user_data, save_user_data, merge_new_data
 
+from vosk import Model  # We'll load the model once here
+
 keyword_detected_queue = queue.Queue()
 
-import requests
 
 def call_lm_studio(
     prompt: str,
@@ -46,23 +57,18 @@ def call_lm_studio(
         response = requests.post(url, json=payload, timeout=120)
         response.raise_for_status()
         
-        # We parse the JSON and get the text from choices[0]["text"].
         response_data = response.json()
         choices = response_data.get("choices", [])
         if not choices:
             return "[No completion returned]"
 
-        # Extract text from the first choice
         text = choices[0].get("text", "")
-
-        # Strip leading/trailing whitespace/newlines:
-        text = text.strip()
-
-        return text
+        return text.strip()
 
     except requests.exceptions.RequestException as e:
         print(f"[LM Studio] Error: {e}")
         return "[Error retrieving LM Studio response]"
+
 
 def process_text(input_text: str) -> str:
     """
@@ -70,74 +76,63 @@ def process_text(input_text: str) -> str:
     """
     return call_lm_studio(input_text)
 
-def conversation_flow():
+
+def conversation_flow(vosk_model):
     """
     New conversation flow logic:
       1) Bot says "How can I help you?"
-      2) Listen for user up to 5s (timeout=5). 
+      2) Listen for user up to 7s (timeout=7).
          If no speech => fallback to keyword detection.
-      3) Once user speaks (silence_timeout=2.5 to finalize),
-         pass text to Rasa, TTS the response.
-      4) Then repeatedly listen for user again with 6s timeout. 
-         If no speech => fallback. 
-         Otherwise => respond again, etc.
-      5) Continue until user doesn't speak for 6s => fallback.
+      3) Once user speaks (silence_timeout=2.0), pass text to LM Studio, TTS response.
+      4) Repeat until user doesn't speak for 7s => fallback.
     """
-    # 1) Prompt
     text_to_speech("How can I help you?")
 
-    # 2) First user input => must start within 5s
-    user_input =  continuous_recognition(
-        timeout=7,          # 5s to begin speech
+    user_input = continuous_recognition(
+        vosk_model=vosk_model,
+        timeout=7,
         max_speak_duration=25,
-         #2.5s silence ends speech
-         #If user never starts speaking => returns None
+        silence_timeout=2.5
     )
     if not user_input:
-        print("[Conversation] No speech within 5s => fallback to keyword detection.")
+        print("[Conversation] No speech within 7s => fallback to keyword detection.")
         return []
-    
+
     extracted = extract_all_info(user_input)
     print("EXTRACTED: ", extracted)
     if extracted:
         print(f"[Conversation] Extracted new user data: {extracted}")
-        # Load existing data, merge, save
         existing_data = load_user_data()
         updated_data = merge_new_data(existing_data, extracted)
         save_user_data(updated_data)
-    
-    # --- Prompt engineering step: 
-    #  e.g., prepend "User info: <some summary>" to user input 
+
+    # Load user data for context
     user_data_str = ""
-    # read the newly updated data from file
     user_data = load_user_data()
     if user_data:
-        # You can format it however you want:
         user_data_str = (
             "Here is the known user data:\n"
             + "\n".join([f"{k}: {v}" for k, v in user_data.items()])
             + "\n"
         )
-    
-    # Combine user data + the user’s text into a single prompt
+    # Combine user data + user input
     engineered_input = f"{user_data_str}User says: {user_input}"
-
-    # Now pass the combined text to Rasa
     response = process_text(engineered_input)
     print("RESPOND FOUND: ", response)
     text_to_speech(response)
 
-    # 3) Now repeat until user doesn't speak within 6s
+    # Repeated conversation
     while True:
         user_input = continuous_recognition(
-            timeout=7,        # 6s to begin speech
-            max_speak_duration=25
+            vosk_model=vosk_model,
+            timeout=7,
+            max_speak_duration=25,
+            silence_timeout=2.5
         )
         if not user_input:
-            print("[Conversation] No speech within 6s => fallback to keyword detection.")
+            print("[Conversation] No speech within 7s => fallback to keyword detection.")
             return
 
-        # Extract data again
         extracted = extract_all_info(user_input)
         if extracted:
             print(f"[Conversation] Extracted new user data: {extracted}")
@@ -161,17 +156,19 @@ def conversation_flow():
         print("Output: " + response)
         text_to_speech(response)
 
-        # rinse & repeat (no break here => user can keep talking)
-
-    # We'll never reach here in normal flow.
-
 
 def main():
+    print("[Main] Loading Vosk model once...")
+    vosk_model = Model("/home/pi/Testudo/vosk-model-small-en-us-0.15")
+    print("[Main] Model loaded.")
+
     stop_listening_fn = init_background_listener(
         keyword="turtle",
         event_queue=keyword_detected_queue,
-        model_path="/home/pi/Testudo/vosk-model-small-en-us-0.15"
+        vosk_model=vosk_model,        # pass the loaded model
+        frames_per_buffer=2048
     )
+
     text_to_speech("System is active. Waiting for the keyword")
     print("[Main] System is active. Waiting for the keyword 'turtle'...")
 
@@ -180,25 +177,24 @@ def main():
             keyword_detected = keyword_detected_queue.get()
             if keyword_detected:
                 print("[Main] Keyword 'turtle' detected!")
-
-                # Stop background listener to free the mic for conversation
+                # Stop background listener to free the mic
                 stop_listening_fn()
+                # Run conversation
+                conversation_flow(vosk_model)
 
-                # Run conversation flow
-                conversation_flow()
-
-                # After the conversation ends, we re-init the background listener
+                # Re-init background listener
                 stop_listening_fn = init_background_listener(
                     keyword="turtle",
                     event_queue=keyword_detected_queue,
-                    model_path="/home/pi/Testudo/vosk-model-small-en-us-0.15"
+                    vosk_model=vosk_model,
+                    frames_per_buffer=2048
                 )
-                
-                # After we re-init, ignore triggers for a few seconds
+                # Ignore triggers for 1s after re-init
                 set_ignore_until(time.time() + 1)
 
     except KeyboardInterrupt:
         print("[Main] Exiting on Ctrl+C.")
+
 
 if __name__ == "__main__":
     main()
