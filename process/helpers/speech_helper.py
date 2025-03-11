@@ -1,4 +1,3 @@
-# helpers/speech_helper.py
 import os
 os.environ["ALSA_NO_WARN"] = "1"
 
@@ -6,11 +5,13 @@ import time
 import threading
 import json
 import pyaudio
+
+from vosk import KaldiRecognizer
 from helpers.audio_device_helper import get_input_device_index
-from vosk import Model, KaldiRecognizer
 
 _stop_listening = None  # We'll store a function to stop background listening
 _IGNORE_UNTIL = 0.0
+
 
 def set_ignore_until(t: float):
     """
@@ -21,20 +22,23 @@ def set_ignore_until(t: float):
     _IGNORE_UNTIL = t
 
 
-def init_background_listener(keyword, event_queue, mic_index=None, model_path="/path/to/vosk-model"):
+def init_background_listener(
+    keyword,
+    event_queue,
+    vosk_model,
+    mic_index=None,
+    frames_per_buffer=2048
+):
     """
     Initialize a background thread for keyword detection using Vosk.
+    We reuse an already-loaded `vosk_model` (Model object), reducing overhead.
     Whenever the keyword is detected, we put True into event_queue.
     Returns a stop_listening() function that terminates the background thread.
     """
     global _stop_listening
 
-    # Load Vosk model once here
-    print("[Keyword Listener] Loading Vosk model for keyword detection...")
-    model = Model(model_path)
-    recognizer = KaldiRecognizer(model, 16000)
-    print("[Keyword Listener] Model loaded.")
-    
+    recognizer = KaldiRecognizer(vosk_model, 16000)
+
     if mic_index is None:
         mic_index = get_input_device_index()
 
@@ -46,7 +50,7 @@ def init_background_listener(keyword, event_queue, mic_index=None, model_path="/
         rate=16000,
         input=True,
         input_device_index=mic_index,
-        frames_per_buffer=8000
+        frames_per_buffer=frames_per_buffer
     )
     stream.start_stream()
 
@@ -55,7 +59,8 @@ def init_background_listener(keyword, event_queue, mic_index=None, model_path="/
     def run_background():
         global _IGNORE_UNTIL
         while running:
-            data = stream.read(4000, exception_on_overflow=False)
+            # Read a smaller chunk for lower latency
+            data = stream.read(frames_per_buffer, exception_on_overflow=False)
             if len(data) == 0:
                 continue
 
@@ -68,16 +73,31 @@ def init_background_listener(keyword, event_queue, mic_index=None, model_path="/
                 res_json = recognizer.Result()
                 res_dict = json.loads(res_json)
                 text = res_dict.get("text", "").strip().lower()
-                if text == "huh":
-                    text = ""
 
                 if text:
                     print(f"[Keyword Listener] Final recognized: {text}")
-                    # Only check final recognized text for "turtle"
-                    if keyword.lower() in text or "hurtful" in text or "hurt so " in text or "tirtle" in text or "tortle" in text or "tartle" in text or "hurdle" in text or "hurtle" in text or "murtle" in text or "durtle" in text or "hurtel" in text or "nurtle" in text or "tarte" in text or "thirty" in text or "tarthole" in text:
+                    # Check if "turtle" or synonyms appear
+                    if (
+                        keyword.lower() in text
+                        or "hurtful" in text
+                        or "hurt so " in text
+                        or "tirtle" in text
+                        or "tortle" in text
+                        or "tartle" in text
+                        or "hurdle" in text
+                        or "hurtle" in text
+                        or "murtle" in text
+                        or "durtle" in text
+                        or "hurtel" in text
+                        or "nurtle" in text
+                        or "tarte" in text
+                        or "thirty" in text
+                        or "tarthole" in text
+                    ):
                         event_queue.put(True)
+                # Partial results are ignored for keyword detection
             else:
-                # partial result => ignore for keyword detection
+                # Partial result => ignore for now
                 pass
 
         # Clean up resources
@@ -101,22 +121,24 @@ def init_background_listener(keyword, event_queue, mic_index=None, model_path="/
 
 
 def continuous_recognition(
-        mic_index=None,
-        timeout=2.0,
-        max_speak_duration=16,
-        model_path="/home/pi/Testudo/vosk-model-small-en-us-0.15"):
+    vosk_model,
+    mic_index=None,
+    timeout=2.0,
+    max_speak_duration=16,
+    silence_timeout=2.0,
+    frames_per_buffer=2048
+):
     """
-    Blocks and listens for a single user utterance using Vosk-based STT.
-    - `timeout`: How many seconds to wait for the user to start speaking
-    - `max_speak_duration`: Max time (in seconds) to capture speech
-    - `model_path`: Path to your Vosk STT model
+    Blocks and listens for a single user utterance using a reused Vosk model.
+    - `timeout`: how many seconds to wait for the user to start speaking
+    - `max_speak_duration`: max time (in seconds) to capture speech
+    - `silence_timeout`: after the user starts speaking, if they go silent for
+      this many seconds, we finalize recognition
+    - `frames_per_buffer`: smaller buffer => lower latency
     Returns the recognized text (str) or None if nothing recognized.
     """
-    print("[Speech] Loading Vosk model for continuous recognition...")
-    model = Model(model_path)
-    recognizer = KaldiRecognizer(model, 16000)
-    print("[Speech] Model loaded.")
-    
+    recognizer = KaldiRecognizer(vosk_model, 16000)
+
     if mic_index is None:
         mic_index = get_input_device_index()
 
@@ -127,7 +149,7 @@ def continuous_recognition(
         rate=16000,
         input=True,
         input_device_index=mic_index,
-        frames_per_buffer=8000
+        frames_per_buffer=frames_per_buffer
     )
     stream.start_stream()
 
@@ -137,7 +159,6 @@ def continuous_recognition(
     speech_start_time = None
     recognized_text = []
 
-    silence_timeout = 2.0
     last_speech_time = None
 
     while True:
@@ -151,7 +172,7 @@ def continuous_recognition(
             print("[Speech] Max speaking duration exceeded.")
             break
 
-        data = stream.read(4000, exception_on_overflow=False)
+        data = stream.read(frames_per_buffer, exception_on_overflow=False)
         if len(data) == 0:
             continue
 
@@ -160,13 +181,12 @@ def continuous_recognition(
             result_json = recognizer.Result()
             result_dict = json.loads(result_json)
             text = result_dict.get("text", "").strip()
-            if text == "huh":
-                    text = ""
+
+            # Remove the old "huh" check for optimization (5)
             if text:
                 recognized_text.append(text)
                 last_speech_time = time.time()
                 if speech_start_time is None:
-                    # The moment we get some final text, user has started speaking
                     speech_start_time = time.time()
         else:
             # Partial result
