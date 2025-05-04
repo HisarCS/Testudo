@@ -2,6 +2,6 @@
 # testudo_start.sh
 
 cd Testudo
-source hey/bin/activate
+source venv/bin/activate
 cd process
 python main.py
